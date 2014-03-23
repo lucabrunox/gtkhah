@@ -49,7 +49,7 @@ class GtkHah {
 	
 	bool recurse (Gtk.Widget w, WidgetFunc func) {
 		var action = get_atk_action (w);
-		if (action != null) {
+		if (action != null || w is Gtk.Editable || w is Gtk.TextView) {
 			if (!func (w)) {
 				return false;
 			}
@@ -158,15 +158,19 @@ class GtkHah {
 				recurse (win, (w) => {
 						int key = w.get_data ("gtkhah_key");
 						if (key > 0 && key_to_string (key) == user_hits) {
+							Gtk.Allocation alloc;
+							w.get_allocation (out alloc);
+							
 							int root_x, root_y;
 							int x, y;
 							int mx, my;
 							w.get_window().get_display().get_device_manager().get_client_pointer().get_position (null, out mx, out my);
 							var toplevel = (Gtk.Window) w.get_toplevel ();
 							toplevel.get_window().get_origin (out root_x, out root_y);
+							
 							if (w.translate_coordinates (toplevel, 0, 0, out x, out y)) {
 								try {
-									generate_mouse_event (root_x + x, root_y + y, "b1c");
+									generate_mouse_event (root_x + x + alloc.width/2, root_y + y + alloc.height/2, "b1c");
 									// move mouse back
 									generate_mouse_event (mx, my, "abs");
 								} catch (Error e) {
