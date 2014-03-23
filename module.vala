@@ -47,9 +47,21 @@ class GtkHah {
 		each_window ((win) => { win.queue_draw (); return true; });
 	}
 	
-	bool recurse (Gtk.Widget w, owned WidgetFunc func) {
-		if (!func (w)) {
-			return false;
+	bool recurse (Gtk.Widget w, WidgetFunc func) {
+		var action = get_atk_action (w);
+		if (action != null) {
+			if (!func (w)) {
+				return false;
+			}
+		}
+
+		var notebook = w as Gtk.Notebook;
+		if (notebook != null) {
+			for (var i=0; i < notebook.get_n_pages (); i++) {
+				if (!func (notebook.get_tab_label (notebook.get_nth_page (i)))) {
+					return false;
+				}
+			}
 		}
 		
 		if (w is Gtk.Container) {
@@ -127,19 +139,16 @@ class GtkHah {
 		var obj = ref_accessible (w);
 		return obj as Atk.Action;
 	}
-	
+
 	bool connect_draw (Gtk.Widget w) {
-		var action = get_atk_action (w);
-		if (action != null) {
-			int key = w.get_data ("gtkhah_key");
-			if (key == 0) {
-				w.draw.connect_after (on_draw);
-			}
-			num_widgets++;
-			w.set_data ("gtkhah_key", num_widgets);
+		int key = w.get_data ("gtkhah_key");
+		if (key == 0) {
+			w.draw.connect_after (on_draw);
 		}
+		num_widgets++;
+		w.set_data ("gtkhah_key", num_widgets);
 		return true;
-	}
+	}		
 
 	[CCode (cname = "atspi_generate_mouse_event")]
 	public extern static bool generate_mouse_event (long x, long y, string name) throws Error;
@@ -149,8 +158,6 @@ class GtkHah {
 				recurse (win, (w) => {
 						int key = w.get_data ("gtkhah_key");
 						if (key > 0 && key_to_string (key) == user_hits) {
-							Gtk.Allocation alloc;
-							w.get_allocation (out alloc);
 							int root_x, root_y;
 							int x, y;
 							int mx, my;
