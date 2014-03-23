@@ -12,3 +12,7 @@ $ GTK_MODULES=$(pwd)/gtkhah.so gedit
 ```
 
 Now press `Ctrl+Alt+E` to start hinting. Press `ESC` to stop hinting.
+
+Hitting keys may seem a little unresponsive due to listening to key release events rather than key press events.
+
+![Gedit with HaH enabled](images/gedit-shot.png?raw=true "Gedit with HaH enabled")
