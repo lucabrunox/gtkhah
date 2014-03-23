@@ -53,7 +53,7 @@ class GtkHah {
 		}
 		
 		var action = get_atk_action (w);
-		if (action != null || w is Gtk.Editable || w is Gtk.TextView) {
+		if (action != null || w is Gtk.Editable || w is Gtk.TextView || w is Gtk.TreeView) {
 			if (!func (w)) {
 				return false;
 			}
@@ -190,7 +190,7 @@ class GtkHah {
 								}
 							}
 							
-							if (w is Gtk.Editable || w is Gtk.TextView) {
+							if (w is Gtk.Editable || w is Gtk.TextView || w is Gtk.TreeView) {
 								stop_hinting ();
 							}
 							
