@@ -89,14 +89,33 @@ class GtkHah {
 		if (key == 0) {
 			return false;
 		}
-		var text = key_to_string (key);
+		var keystr = key_to_string (key);
+		var keystr_length = keystr.length;
+		var user_hits_length = user_hits.length;
+		var text = "<span bgcolor='#fce94f'>";
+		var i=0;
+		if (keystr.has_prefix (user_hits)) {
+			text += "<span bgcolor='#729fcf'>";
+			for (; i < keystr_length; i++) {
+				if (i >= user_hits_length || keystr[i] != user_hits[i]) {
+					break;
+				}
+				text += keystr[i].to_string ();
+			}
+			text += "</span>";
+		}
+		
+		for (; i < keystr_length; i++) {
+			text += keystr[i].to_string ();
+		}
+		text += "</span>";
 
 		var fc = Pango.FontDescription.from_string ("Sans 8");
 		var l = Pango.cairo_create_layout (cr);
         l.set_font_description (fc);
         l.set_width (w.get_allocated_width () * Pango.SCALE);
 		l.set_height (w.get_allocated_height () * Pango.SCALE);
-        l.set_text (text, -1);
+        l.set_markup (text, -1);
 
 		Pango.Rectangle r;
 		l.get_extents (null, out r);
@@ -130,7 +149,7 @@ class GtkHah {
 
 	void handle_hint () {
 		each_window ((win) => {
-				return recurse (win, (w) => {
+				recurse (win, (w) => {
 						int key = w.get_data ("gtkhah_key");
 						if (key > 0 && key_to_string (key) == user_hits) {
 							var action = get_atk_action (w);
@@ -142,6 +161,8 @@ class GtkHah {
 						}
 						return true;
 				});
+				win.queue_draw ();
+				return true;
 		});
 	}
 	
