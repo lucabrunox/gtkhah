@@ -2,15 +2,37 @@ public void gtk_module_init (ref unowned string[] args) {
 	new GtkHah ();
 }
 
+class Trie {
+	char c;
+	HashTable<char, Trie> children = new HashTable<char, Trie> (direct_hash, direct_equal);
+}
+
+delegate void WidgetFunc (Gtk.Widget w);
+
 class GtkHah {
+	bool hinting = false;
+	string chars = "ASDFQWE";
+	Trie hint_tree = null;
+	
 	public GtkHah () {
 		Atk.Util.add_key_event_listener (on_key);
 	}
 
 	void show_hints () {
+		hint_tree = new Trie ();
 		var wins = Gtk.Window.list_toplevels ();
 		foreach (var win in wins) {
-			connect_draw (win);
+			recurse (win, connect_draw);
+		}
+	}
+
+	void recurse (Gtk.Widget w, owned WidgetFunc func) {
+		func (w);
+		if (w is Gtk.Container) {
+			var children = ((Gtk.Container) w).get_children ();
+			foreach (var c in children) {
+				recurse (c, func);
+			}
 		}
 	}
 	
@@ -27,6 +49,10 @@ class GtkHah {
 		l.set_height (w.get_allocated_height () * Pango.SCALE);
         l.set_text (key, -1);
 
+		Pango.Rectangle r;
+		l.get_extents (null, out r);
+		// center vertically
+		cr.move_to (0, (r.y / Pango.SCALE) + w.get_allocated_height()/2 - (r.height / Pango.SCALE)/2);
 		Pango.cairo_show_layout (cr, l);
 		
 		return false;
@@ -41,13 +67,8 @@ class GtkHah {
 	}
 	
 	void connect_draw (Gtk.Widget w) {
-		if (w is Gtk.Container) {
-			foreach (var c in ((Gtk.Container) w).get_children ()) {
-				connect_draw (c);
-			}
-		}
 		if (w is Gtk.Activatable) {
-			string* key = w.get_data ("gtkhah_key");
+			unowned string key = w.get_data ("gtkhah_key");
 			if (key == null) {
 				w.draw.connect_after (on_draw);
 			}
