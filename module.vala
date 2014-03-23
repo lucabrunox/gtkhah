@@ -48,6 +48,10 @@ class GtkHah {
 	}
 	
 	bool recurse (Gtk.Widget w, WidgetFunc func) {
+		if (w is Gtk.SeparatorMenuItem) {
+			return true;
+		}
+		
 		var action = get_atk_action (w);
 		if (action != null || w is Gtk.Editable || w is Gtk.TextView) {
 			if (!func (w)) {
