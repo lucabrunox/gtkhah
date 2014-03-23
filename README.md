@@ -1,5 +1,7 @@
-Gtk+ 3.0 Hit-a-Hint, mouseless keyboard navigation
+Gtk+ 3.0 Hit-a-Hint
 ======
+
+Mouseless keyboard navigation.
 
 ```
 # apt-get install gcc make valac libgtk-3-dev libatk1.0-dev libatspi2.0-dev
