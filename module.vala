@@ -185,6 +185,11 @@ class GtkHah {
 									}
 								}
 							}
+							
+							if (w is Gtk.Editable || w is Gtk.TextView) {
+								stop_hinting ();
+							}
+							
 							user_hits = "";
 							return false;
 						}
