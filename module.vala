@@ -4,11 +4,6 @@ public void gtk_module_init (ref unowned string[] args) {
 	gtk_hah = new GtkHah ();
 }
 
-class Trie {
-	char c;
-	HashTable<char, Trie> children = new HashTable<char, Trie> (direct_hash, direct_equal);
-}
-
 delegate bool WidgetFunc (Gtk.Widget w);
 delegate bool WindowFunc (Gtk.Window w);
 
@@ -16,7 +11,6 @@ class GtkHah {
 	bool hinting = false;
 	string chars = null;
 	int nchars = 0;
-	Trie hint_tree = null;
 	int num_widgets = 0;
 	string user_hits = "";
 	
@@ -147,14 +141,38 @@ class GtkHah {
 		return true;
 	}
 
+	[CCode (cname = "atspi_generate_mouse_event")]
+	public extern static bool generate_mouse_event (long x, long y, string name) throws Error;
+	
 	void handle_hint () {
 		each_window ((win) => {
 				recurse (win, (w) => {
 						int key = w.get_data ("gtkhah_key");
 						if (key > 0 && key_to_string (key) == user_hits) {
-							var action = get_atk_action (w);
-							if (action != null) {
-								action.do_action (0);
+							Gtk.Allocation alloc;
+							w.get_allocation (out alloc);
+							int root_x, root_y;
+							int x, y;
+							int mx, my;
+							w.get_window().get_display().get_device_manager().get_client_pointer().get_position (null, out mx, out my);
+							var toplevel = (Gtk.Window) w.get_toplevel ();
+							toplevel.get_window().get_origin (out root_x, out root_y);
+							if (w.translate_coordinates (toplevel, 0, 0, out x, out y)) {
+								try {
+									generate_mouse_event (root_x + x, root_y + y, "b1c");
+									// move mouse back
+									generate_mouse_event (mx, my, "abs");
+								} catch (Error e) {
+									warning (e.message);
+								}
+							} else {
+								if (!w.activate ()) {
+									w.grab_focus ();
+									var action = get_atk_action (w);
+									if (action != null) {
+										action.do_action (0);
+									}
+								}
 							}
 							user_hits = "";
 							return false;
