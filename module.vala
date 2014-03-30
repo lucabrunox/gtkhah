@@ -89,8 +89,12 @@ class GtkHah {
 		}
 		return res;
 	}
-	
+
+	#if GTK2
+	bool on_draw (Gtk.Widget w, Gdk.EventExpose ev) {
+	#else
 	bool on_draw (Gtk.Widget w, Cairo.Context cr) {
+	#endif
 		if (!hinting) {
 			return false;
 		}
@@ -99,6 +103,11 @@ class GtkHah {
 		if (key == 0) {
 			return false;
 		}
+
+		#if GTK2
+		var cr = Gdk.cairo_create (w.get_window ());
+		#endif
+		
 		var keystr = key_to_string (key);
 		var keystr_length = keystr.length;
 		var user_hits_length = user_hits.length;
@@ -120,17 +129,20 @@ class GtkHah {
 		}
 		text += "</span>";
 
+		Gtk.Allocation alloc;
+		w.get_allocation (out alloc);
+		
 		var fc = Pango.FontDescription.from_string ("Sans 8");
 		var l = Pango.cairo_create_layout (cr);
         l.set_font_description (fc);
-        l.set_width (w.get_allocated_width () * Pango.SCALE);
-		l.set_height (w.get_allocated_height () * Pango.SCALE);
+        l.set_width (alloc.width * Pango.SCALE);
+		l.set_height (alloc.height * Pango.SCALE);
         l.set_markup (text, -1);
 
 		Pango.Rectangle r;
 		l.get_extents (null, out r);
 		// center vertically
-		cr.move_to (0, (r.y / Pango.SCALE) + w.get_allocated_height()/2 - (r.height / Pango.SCALE)/2);
+		cr.move_to (0, (r.y / Pango.SCALE) + alloc.height/2 - (r.height / Pango.SCALE)/2);
 		Pango.cairo_show_layout (cr, l);
 		
 		return false;
@@ -147,7 +159,11 @@ class GtkHah {
 	bool connect_draw (Gtk.Widget w) {
 		int key = w.get_data ("gtkhah_key");
 		if (key == 0) {
+			#if GTK2
+			w.expose_event.connect_after (on_draw);
+			#else
 			w.draw.connect_after (on_draw);
+			#endif
 		}
 		num_widgets++;
 		w.set_data ("gtkhah_key", num_widgets);
@@ -168,7 +184,11 @@ class GtkHah {
 							int root_x, root_y;
 							int x, y;
 							int mx, my;
+							#if GTK2
+							w.get_window().get_display().get_pointer (null, out mx, out my, null);
+							#else
 							w.get_window().get_display().get_device_manager().get_client_pointer().get_position (null, out mx, out my);
+							#endif
 							var toplevel = (Gtk.Window) w.get_toplevel ();
 							toplevel.get_window().get_origin (out root_x, out root_y);
 							
@@ -207,7 +227,7 @@ class GtkHah {
 	int on_key (Atk.KeyEventStruct e) {
 		var modmask = Gdk.ModifierType.MOD1_MASK | Gdk.ModifierType.CONTROL_MASK;
 		var mod = e.state & modmask;
-		if (mod == modmask && e.keyval == Gdk.Key.e) {
+		if (mod == modmask && e.keyval == 'e') {
 			start_hinting ();
 			return 1;
 		}
@@ -223,7 +243,7 @@ class GtkHah {
 					handle_hint ();
 				}
 				return 1;
-			} else if (e.keyval == Gdk.Key.Escape) {
+			} else if (e.keyval == 65307) { // escape
 				stop_hinting ();
 				return 1;
 			}
